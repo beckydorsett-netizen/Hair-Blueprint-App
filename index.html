@@ -1,0 +1,1149 @@
+<!-- Chosen Palette: Warm Stone with Purple, Pink, Red, Teal, and Amber Accents for color-coding. -->
+<!-- This Single Page Application (SPA) uses Firebase Firestore for authentication and data persistence (storing last selections and daily routine logs). -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Advanced Hair Blueprint</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .styled-header {
+            font-family: 'Playfair Display', serif;
+        }
+        /* --- MAIN TAB BUTTONS STYLING --- */
+        .tab-button {
+            transition: all 0.3s ease;
+            /* Added mx-1 and fixed width for separation */
+            @apply flex-1 px-4 py-3 text-sm md:text-base font-bold rounded-lg focus:outline-none focus:ring-4 focus:ring-purple-400 shadow-md transition-all duration-300 mx-1 border border-stone-300;
+            max-width: 25%; /* Adjusted max-width for 4 buttons */
+        }
+        .tab-button.active {
+            @apply bg-purple-700 text-white shadow-inner border-purple-700;
+        }
+        .tab-button:not(.active) {
+            @apply text-stone-700 bg-white hover:bg-purple-50;
+        }
+        /* ACCORDION HEADER (Heading as a Button/Link) */
+        .accordion-header {
+            @apply flex justify-between items-center w-full px-6 py-4 cursor-pointer text-xl font-bold rounded-t-xl transition-colors duration-300;
+        }
+        .accordion-header.active {
+            @apply bg-purple-100 text-purple-800;
+        }
+        .accordion-header:not(.active) {
+            @apply bg-stone-100 text-stone-700 hover:bg-stone-200;
+        }
+        .accordion-content {
+            @apply p-6 pt-4 border-t border-stone-200;
+        }
+        /* PROTOCOL BUTTONS (Default Base) */
+        .protocol-button {
+            transition: all 0.3s ease;
+            @apply w-full sm:w-auto px-6 py-4 text-base md:text-lg font-semibold rounded-xl shadow-lg border focus:outline-none focus:ring-4 flex-grow;
+        }
+
+        /* --- WASH DAY BUTTON STYLING (STEP 1) --- */
+        .wash-button { @apply border-2; }
+        .wash-button[data-protocol="bond"]:not(.active) { @apply text-purple-700 border-purple-400 bg-white hover:bg-purple-50; }
+        .wash-button[data-protocol="bond"].active { @apply bg-purple-700 border-purple-700 text-white shadow-inner focus:ring-purple-400; }
+        .wash-button[data-protocol="shine"]:not(.active) { @apply text-red-600 border-red-400 bg-white hover:bg-red-50; }
+        .wash-button[data-protocol="shine"].active { @apply bg-red-600 border-red-600 text-white shadow-inner focus:ring-red-400; }
+        .wash-button[data-protocol="moisture"]:not(.active) { @apply text-teal-700 border-teal-400 bg-white hover:bg-teal-50; }
+        .wash-button[data-protocol="moisture"].active { @apply bg-teal-700 border-teal-700 text-white shadow-inner focus:ring-teal-400; }
+        .wash-button[data-protocol="reset"]:not(.active) { @apply text-amber-700 border-amber-400 bg-white hover:bg-amber-50; }
+        .wash-button[data-protocol="reset"].active { @apply bg-amber-700 border-amber-700 text-white shadow-inner focus:ring-amber-400; }
+
+        /* --- STYLE GOAL BUTTON STYLING (STEP 2) --- */
+        .style-button { @apply border-pink-300; }
+        .style-button.active { @apply bg-pink-600 border-pink-600 text-white shadow-inner focus:ring-pink-400; }
+        .style-button[data-protocol="waves"]:not(.active) { @apply text-blue-700 bg-white hover:bg-pink-50; }
+        .style-button[data-protocol="blowout"]:not(.active) { @apply text-indigo-700 bg-white hover:bg-pink-50; }
+        .style-button[data-protocol="iron"]:not(.active) { @apply text-orange-700 bg-white hover:bg-pink-50; }
+        .style-button[data-protocol="gel"]:not(.active) { @apply text-cyan-700 bg-white hover:bg-pink-50; }
+        .style-button[data-protocol="texture"]:not(.active) { @apply text-lime-700 bg-white hover:bg-pink-50; }
+
+        .card { @apply bg-white rounded-xl shadow-2xl; }
+        .step-card { @apply bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-500 rounded-lg shadow-xl p-6 mt-6; }
+        .step-card h3 { @apply text-2xl font-bold text-purple-800 mb-3; }
+        .product-grid { @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6; }
+        
+        /* --- PRODUCT CARD FOR ARSENAL --- */
+        .product-card-enhanced {
+            @apply bg-stone-50 rounded-xl shadow-lg p-5 border-t-4 border-pink-500 flex flex-col justify-between space-y-3;
+        }
+        .product-card-enhanced .product-name {
+            @apply text-xl font-bold text-stone-800;
+        }
+        .product-card-enhanced .usage-note {
+            @apply text-sm text-stone-600 border-b pb-3;
+        }
+        .link-button-group {
+            @apply flex flex-col sm:flex-row gap-3 mt-4;
+        }
+        
+        /* --- UPDATED LINK BUTTON STYLING (Matches Log Button) --- */
+        .link-button-group a {
+            /* Matched padding, font-weight, and size for prominence */
+            @apply flex-1 text-center px-4 py-3 text-base font-bold rounded-lg transition duration-150 shadow-md; 
+        }
+        .price-link {
+            @apply bg-purple-700 text-white hover:bg-purple-800;
+        }
+        .reorder-link {
+            @apply bg-pink-600 text-white hover:bg-pink-700;
+        }
+
+        .quick-check-card { @apply card bg-purple-700 text-white p-6 mb-8; }
+        .quick-check-card p { @apply text-lg; } /* Increased text size for readability */
+        
+        /* Custom list style for step cards */
+        .step-card ol {
+            @apply list-decimal list-inside space-y-2 text-stone-700 ml-4;
+        }
+        .step-card ol li {
+            @apply text-base;
+        }
+
+        /* --- CALENDAR STYLING (FIXED WITH BOX-SHADOW) --- */
+        #calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0; /* Remove gap to make borders contiguous */
+        }
+        
+        /* APPLY BOX SHADOW FOR GRID LINES TO BOTH HEADERS AND CELLS */
+        .day-header, .day-cell {
+            /* Thickness reduced from 2px to 1px */
+            box-shadow: 0 0 0 1px #1f2937 inset; 
+        }
+
+        .day-header {
+            font-family: 'Playfair Display', serif; 
+            /* Removed old border classes */
+            @apply text-center text-sm font-extrabold text-purple-800 p-2 bg-purple-50;
+        }
+        .day-cell {
+            /* Removed old border classes */
+            @apply flex flex-col items-center justify-start p-1 sm:p-2 transition duration-150 cursor-pointer;
+            position: relative;
+            /* Aspect Ratio Trick for Square Cells */
+            height: 0;
+            padding-bottom: 100%;
+            overflow: hidden; 
+            box-sizing: border-box;
+            display: block; /* Use block for absolute positioning of children */
+        }
+        
+        /* Hover/Movable Highlight */
+        .day-cell:hover:not(.outside-month) {
+            @apply bg-purple-200 shadow-xl;
+        }
+        .day-cell.outside-month:hover {
+            @apply cursor-default;
+        }
+
+        .day-cell > * {
+            position: absolute;
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .day-number {
+            /* Use a different font and bolden */
+            font-family: 'Playfair Display', serif;
+            @apply text-lg font-extrabold text-stone-900;
+            top: 5px; 
+            height: auto;
+        }
+        .day-routine {
+            @apply text-xs font-semibold w-full px-1 py-0.5 rounded-md;
+            bottom: 5px; 
+            height: auto;
+        }
+
+        /* ROUTINE COLORS */
+        .wash-bond { @apply bg-purple-100; }
+        .wash-shine { @apply bg-red-100; }
+        .wash-moisture { @apply bg-teal-100; }
+        .wash-reset { @apply bg-amber-100; } /* Clarify Color */
+        .non-wash { @apply bg-white; } /* Non-wash days (now blank) */
+        .outside-month { @apply opacity-50 bg-stone-100; }
+
+        /* HIGHLIGHTS */
+        .today-highlight {
+            /* Actual Live "Today" (subtle pink background) */
+            @apply !bg-pink-100; 
+            z-index: 10;
+        }
+        .selected-highlight {
+            /* SELECTED DATE (Oct 22) - Reduced thickness from 6px to 3px and changed to inset */
+            box-shadow: 0 0 0 3px #3b82f6 inset !important; /* Inner Blue Shadow (3px) */
+            @apply !bg-blue-100;
+            z-index: 11;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+
+        <header class="text-center mb-10">
+            <h1 class="text-5xl md:text-7xl styled-header font-extrabold text-purple-800">My Advanced Hair Blueprint</h1>
+            <p class="text-lg text-stone-600 mt-3">Your personalized guide to healthy, vibrant, and perfectly styled hair.</p>
+            <p id="auth-status" class="text-sm text-green-600 font-medium mt-2"></p>
+        </header>
+
+        <!-- MAIN TAB NAVIGATION (UPDATED FOR 4 TABS) -->
+        <nav class="flex flex-wrap justify-center mb-12 space-x-1 md:space-x-4" role="tablist">
+            <button id="tab-btn-protocol" role="tab" aria-selected="true" class="tab-button active">Daily Protocol</button>
+            <button id="tab-btn-calendar" role="tab" aria-selected="false" class="tab-button">Monthly Calendar</button>
+            <button id="tab-btn-weekly" role="tab" aria-selected="false" class="tab-button">Weekly View</button>
+            <button id="tab-btn-arsenal" role="tab" aria-selected="false" class="tab-button">Product Arsenal</button>
+        </nav>
+
+        <main>
+            <!-- DAILY PROTOCOL TAB CONTENT -->
+            <div id="tab-panel-protocol" role="tabpanel" class="space-y-10">
+                <p class="text-center text-stone-700 text-xl font-medium">Use the sections below to generate your steps: first select your Wash Routine, then your Style Goal.</p>
+
+                <!-- QUICK CHECK WIDGET -->
+                <div id="quick-check-widget" class="quick-check-card text-center">
+                    <h2 class="text-3xl font-bold mb-2">Selected Day Routine (PST)</h2>
+                    <p id="quick-check-date" class="text-lg font-semibold mb-3"></p>
+                    <p>Suggested routine based on the 4-week cycle:</p>
+                    <div id="suggested-day-display" class="text-4xl font-extrabold my-3 bg-white text-purple-800 rounded-lg p-3 mx-auto max-w-sm"></div>
+                    <button id="use-suggested-btn" class="px-4 py-2 bg-pink-500 text-white rounded-lg font-semibold hover:bg-pink-600 transition duration-150 mt-3 shadow-md">Use Suggested Wash</button>
+                </div>
+                
+                <!-- SELECTION STATUS DISPLAY (Floating Element) -->
+                <div id="selection-status" class="mb-4 p-4 bg-stone-100 rounded-xl text-lg text-center font-bold border-l-4 border-purple-500 shadow-lg">
+                    No Routine Selected. Please choose Step 1 and Step 2 above.
+                </div>
+
+                <!-- STEP 1: WASH ROUTINE ACCORDION -->
+                <section class="card overflow-hidden">
+                    <div id="accordion-wash-header" class="accordion-header active" data-target="accordion-wash-content">
+                        <span>Step 1: Select Your Wash Routine</span>
+                        <span id="accordion-wash-chevron" class="transform transition-transform duration-300">▼</span>
+                    </div>
+                    <div id="accordion-wash-content" class="accordion-content">
+                        <div class="flex flex-wrap justify-center gap-4">
+                            <button class="protocol-button wash-button" data-protocol="bond">Bond Repair Shine at HP</button>
+                            <button class="protocol-button wash-button" data-protocol="shine">Shine & pH</button>
+                            <button class="protocol-button wash-button" data-protocol="moisture">Deep Moisture</button>
+                            <button class="protocol-button wash-button" data-protocol="reset">Clarify Reset</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STEP 2: STYLE GOAL ACCORDION -->
+                <section class="card overflow-hidden">
+                    <div id="accordion-style-header" class="accordion-header" data-target="accordion-style-content">
+                        <span>Step 2: Select Your Style Goal</span>
+                        <span id="accordion-style-chevron" class="transform transition-transform duration-300 rotate-90">►</span>
+                    </div>
+                    <div id="accordion-style-content" class="accordion-content hidden">
+                        <div class="flex flex-wrap justify-center gap-4">
+                            <button class="protocol-button style-button" data-protocol="waves">Defined Waves (Air-Dry)</button>
+                            <button class="protocol-button style-button" data-protocol="blowout">Smooth Blowout (Heat)</button>
+                            <button class="protocol-button style-button" data-protocol="iron">Hot Iron Finish (High-Heat)</button>
+                            <button class="protocol-button style-button" data-protocol="gel">Strong Gel Cast (Air-Dry)</button>
+                            <button class="protocol-button style-button" data-protocol="texture">Beachy Texture</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- FINAL PROTOCOL DISPLAY & LOG BUTTON -->
+                <section id="protocol-display" class="mt-8">
+                    
+                    <div id="wash-steps"></div>
+                    <div id="style-steps"></div>
+                    
+                    <div id="log-section" class="card p-6 mt-8 text-center hidden">
+                        <p class="text-xl font-bold text-stone-700 mb-4">Routine Selected!</p>
+                        <div class="flex flex-col sm:flex-row justify-center gap-4">
+                            <button id="log-completion-btn" class="flex-1 max-w-sm px-8 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition duration-150 shadow-md">
+                                Log as Completed Today
+                            </button>
+                            
+                            <!-- CLEAR SELECTION BUTTON -->
+                            <button id="clear-selection-btn" class="flex-1 max-w-sm px-6 py-3 bg-stone-300 text-stone-800 rounded-lg font-bold hover:bg-stone-400 transition duration-150 shadow-md">
+                                Clear Routine Selection
+                            </button>
+                        </div>
+                        <p id="log-message" class="text-sm text-green-500 mt-2"></p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- MONTHLY CALENDAR TAB CONTENT (NEW) -->
+            <div id="tab-panel-calendar" role="tabpanel" class="hidden">
+                <h2 class="text-3xl font-bold text-stone-800 mb-6 text-center styled-header">Wash Cycle Calendar (MWF - 4 Week Rotation)</h2>
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <button id="prev-month-btn" class="text-3xl font-bold text-purple-700 hover:text-purple-500">«</button>
+                        <h3 id="calendar-month-year" class="text-3xl font-extrabold text-purple-700 mx-4"></h3>
+                        <button id="next-month-btn" class="text-3xl font-bold text-purple-700 hover:text-purple-500">»</button>
+                    </div>
+                    
+                    <div id="calendar-grid">
+                        <!-- Headers and cells are generated here by JS render function -->
+                    </div>
+                    <div class="mt-6 flex justify-center gap-4 flex-wrap text-sm font-medium">
+                        <span class="flex items-center"><div class="w-3 h-3 rounded-full bg-purple-700 mr-2"></div> Bond Repair Shine at HP</span>
+                        <span class="flex items-center"><div class="w-3 h-3 rounded-full bg-red-600 mr-2"></div> Shine & pH</span>
+                        <span class="flex items-center"><div class="w-3 h-3 rounded-full bg-teal-700 mr-2"></div> Deep Moisture</span>
+                        <span class="flex items-center"><div class="w-3 h-3 rounded-full bg-amber-700 mr-2"></div> Clarify Reset (Detox)</span>
+                        <span class="flex items-center"><div class="w-3 h-3 rounded-full bg-white border border-stone-300 mr-2"></div> No Wash</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WEEKLY VIEW TAB CONTENT (UPDATED FOR 4-WEEK CYCLE) -->
+            <div id="tab-panel-weekly" role="tabpanel" class="hidden">
+                <h2 class="text-3xl font-bold text-stone-800 mb-6 text-center styled-header">The 4-Week Rotating Wash & Treatment Cycle</h2>
+                <p class="text-lg text-stone-700 text-center mb-8">This is your 12-day rotating foundation. The cycle repeats after the **Clarify Reset** (on the 4th Friday wash).</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="card border-t-4 border-purple-700 p-6">
+                        <h3 class="text-2xl font-bold text-purple-700 mb-3">Bond Repair Shine at HP (Cycle 1, 4, 7, 10)</h3>
+                        <p class="text-stone-600 mb-4">Rebuilds internal strength from color damage.</p>
+                        <ol class="list-decimal list-inside space-y-2 text-stone-700 ml-4">
+                            <li>(Optional, bi-weekly) Pre-wash with **Olaplex No. 3**.</li>
+                            <li>Wash with **Olaplex No. 4**.</li>
+                            <li>Condition with **Olaplex No. 5**.</li>
+                        </ol>
+                    </div>
+                    <div class="card border-t-4 border-red-600 p-6">
+                        <h3 class="text-2xl font-bold text-red-600 mb-3">Shine & pH (Cycle 2, 5, 8, 11)</h3>
+                        <p class="text-stone-600 mb-4">Seals the cuticle for color vibrancy and shine.</p>
+                        <ol class="list-decimal list-inside space-y-2 text-stone-700 ml-4">
+                            <li>Wash with **EverPure Glossing Shampoo**.</li>
+                            <li>Apply **EverPure Glossing Glaze** (wait 2-3 mins).</li>
+                            <li>Layer **EverPure Glossing Conditioner** on top, then rinse.</li>
+                        </ol>
+                    </div>
+                    <div class="card border-t-4 border-teal-700 p-6">
+                        <h3 class="text-2xl font-bold text-teal-700 mb-3">Deep Moisture (Cycle 3, 6, 9)</h3>
+                        <p class="text-stone-600 mb-4">Focuses on hydration, softness, and frizz control.</p>
+                        <ol class="list-decimal list-inside space-y-2 text-stone-700 ml-4">
+                            <li>Wash with **EverPure Deep Nourish Shampoo**.</li>
+                            <li>Apply **EverPure 5-Min Lamination Mask** (*replaces* conditioner).</li>
+                        </ol>
+                    </div>
+                     <div class="card border-t-4 border-amber-700 p-6">
+                        <h3 class="text-2xl font-bold text-amber-700 mb-3">Clarify Reset (Cycle 12)</h3>
+                        <p class="text-stone-600">This is the **12th wash day** (once per 4 weeks) to remove buildup and minerals.</p>
+                        <ol class="list-decimal list-inside space-y-2 text-stone-700 mt-4 ml-4">
+                            <li>Wash with **OGX Clarifying Shampoo** twice to remove all product and mineral buildup.</li>
+                            <li>Follow with **EverPure 5-Min Lamination Mask** to restore moisture.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PRODUCT ARSENAL TAB CONTENT (Enhanced) -->
+            <div id="tab-panel-arsenal" role="tabpanel" class="hidden space-y-8">
+                <h2 class="text-3xl font-bold text-stone-800 mb-6 text-center styled-header">My Product Arsenal</h2>
+                <p class="text-lg text-stone-700 text-center mb-8">A complete reference of all your products, including usage and reorder links.</p>
+
+                <!-- Link Editing Explanation -->
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-lg mb-8">
+                    <p class="font-bold">Pro Tip: Link Management</p>
+                    <p class="text-sm">You can edit the product links (URLs) directly in the **`productData` array** in the script section below to keep your links up-to-date!</p>
+                </div>
+
+                <div id="product-arsenal-display">
+                    <!-- Products will be generated here by JS -->
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, collection, Timestamp, setLogLevel, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- DEMO OVERRIDE FOR USER CONTEXT ---
+        // Setting the demo date to Wednesday, October 22, 2025 (PST) as requested.
+        const DEMO_DATE_PST_STRING = '2025-10-22';
+
+        // Reference date for the 12-day cycle: Monday, 10/20/2025.
+        // This makes 10/22/2025 (Wednesday) fall on Wash Day 2 (Shine & pH).
+        const referenceDate = new Date('2025-10-20T12:00:00Z'); 
+        
+        // Date to start display on Sunday, Oct 19, 2025 (used only for October 2025 view)
+        const cutoffDateString = '2025-10-19';
+        const cutoffDate = new Date(cutoffDateString.replace(/-/g, '/')); 
+        // --------------------------------------
+        
+        // Utility function to get YYYY-MM-DD date string in PST (California time)
+        const getTodayDateStringPST = () => {
+            // In a live environment, this returns the *actual* PST date.
+            const date = new Date();
+            const formatter = new Intl.DateTimeFormat('en-CA', { 
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                timeZone: 'America/Los_Angeles'
+            });
+            return formatter.format(date).replace(/(\d{4})\/(\d{2})\/(\d{2})/, '$1-$2-$3'); // ensure YYYY-MM-DD format
+        };
+        
+        // Use the live PST date string but override the variable for the demo
+        const LIVE_PST_DATE = getTodayDateStringPST(); 
+        const TODAY_PST_DATE = DEMO_DATE_PST_STRING; // Using the user's date for demo context
+
+        // Utility function to get YYYY-MM-DD date string from a Date object
+        const getDateString = (date) => date.toISOString().split('T')[0];
+        
+        
+        // Global Firebase variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId = null;
+        const SETTINGS_DOC_PATH = (uid) => `/artifacts/${appId}/users/${uid}/hair-blueprint-settings/lastSelection`;
+        const LOG_COLLECTION_PATH = (uid) => `/artifacts/${appId}/users/${uid}/hair-blueprint-log`;
+
+        let currentWash = 'shine'; // Pre-selected based on user input
+        let currentStyle = null;
+        
+        // New State Variables for Calendar and Selection
+        let currentCalendarMonthOffset = 0; // Show October 2025 (initializes to current month, which we'll manipulate)
+        let selectedDateString = TODAY_PST_DATE; // Date currently highlighted on calendar/quick-check
+        
+        // Adjust the calendar offset to show the month of the demo date (October 2025)
+        const initialDate = new Date();
+        const demoDate = new Date(DEMO_DATE_PST_STRING.replace(/-/g, '/'));
+        currentCalendarMonthOffset = (demoDate.getFullYear() - initialDate.getFullYear()) * 12 + (demoDate.getMonth() - initialDate.getMonth());
+
+
+        // --- FIREBASE INITIALIZATION & AUTH ---
+        const setupFirebase = async () => {
+            try {
+                if (Object.keys(firebaseConfig).length === 0) {
+                    throw new Error("Firebase config missing. Using anonymous mode.");
+                }
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                // setLogLevel('Debug'); // Enable for detailed logging
+
+                const authStatusEl = document.getElementById('auth-status');
+                
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        authStatusEl.textContent = `User ID: ${userId} | Status: Ready`;
+                        await loadLastSelection();
+                    } else {
+                        // Fallback for unauthenticated users 
+                        userId = 'guest-' + (window.crypto.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).substring(2));
+                        authStatusEl.textContent = `Status: Guest Mode (ID: ${userId.substring(0, 8)}...)`;
+                        loadLastSelectionFromLocalStorage();
+                    }
+
+                    // --- INITIAL STATE INJECTION ---
+                    // Pre-select wash based on user's input (Shine & pH on Oct 22)
+                    applySelectionsToUI();
+
+                    // Optional: Log completion for the demo date if in live mode (disabled for this specific response)
+                    
+                    initializeUI();
+                });
+
+            } catch (error) {
+                console.error("Firebase setup failed:", error);
+                document.getElementById('auth-status').textContent = `Authentication Error: ${error.message.substring(0, 50)}...`;
+                // Fallback for broken Firebase setup
+                userId = 'guest-' + (window.crypto.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).substring(2));
+                initializeUI();
+            }
+        };
+        
+        // --- DATA PERSISTENCE HANDLERS (Same as before) ---
+        const saveLastSelection = async () => {
+            if (!userId) return; 
+            
+            const selection = {
+                wash: currentWash,
+                style: currentStyle,
+                timestamp: Timestamp.now()
+            };
+
+            if (userId.startsWith('guest-')) {
+                localStorage.setItem('hair-blueprint-last', JSON.stringify(selection));
+                return;
+            }
+
+            try {
+                const docRef = doc(db, SETTINGS_DOC_PATH(userId));
+                await setDoc(docRef, selection, { merge: true });
+            } catch (e) {
+                console.error("Error saving document:", e);
+            }
+        };
+
+        const loadLastSelection = async () => {
+            if (!userId || userId.startsWith('guest-')) {
+                 loadLastSelectionFromLocalStorage();
+                 return;
+            }
+            try {
+                const docRef = doc(db, SETTINGS_DOC_PATH(userId));
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    // Do not overwrite the user's initial preference if already set
+                    currentWash = currentWash || data.wash || null;
+                    currentStyle = data.style || null;
+                    applySelectionsToUI();
+                }
+            } catch (e) {
+                console.error("Error loading document:", e);
+            }
+        };
+
+        const loadLastSelectionFromLocalStorage = () => {
+            const stored = localStorage.getItem('hair-blueprint-last');
+            if (stored) {
+                try {
+                    const data = JSON.parse(stored);
+                    currentWash = currentWash || data.wash || null;
+                    currentStyle = data.style || null;
+                    applySelectionsToUI();
+                } catch (e) {
+                    console.warn("Failed to parse local storage data.");
+                }
+            }
+        };
+
+        const logCompletion = async () => {
+            if (!currentWash || !currentStyle) return;
+
+            const today = LIVE_PST_DATE; // Use live PST date for logging
+            const logMessageEl = document.getElementById('log-message');
+
+            if (userId.startsWith('guest-')) {
+                logMessageEl.textContent = `Routine logged locally for ${today}! (Note: Log will disappear on refresh in Guest Mode)`;
+                return;
+            }
+
+            try {
+                // Check if already logged today
+                const logQuery = query(
+                    collection(db, LOG_COLLECTION_PATH(userId)),
+                    where("date", "==", today)
+                );
+                const querySnapshot = await getDocs(logQuery);
+
+                if (!querySnapshot.empty) {
+                    logMessageEl.textContent = `You already logged a routine for ${today}!`;
+                    return;
+                }
+
+                await addDoc(collection(db, LOG_COLLECTION_PATH(userId)), {
+                    wash: currentWash,
+                    style: currentStyle,
+                    date: today,
+                    timestamp: Timestamp.now()
+                });
+                logMessageEl.textContent = `Routine successfully logged for ${today}! Great job!`;
+            } catch (e) {
+                console.error("Error logging completion:", e);
+                logMessageEl.textContent = `Error logging completion. Please check console.`;
+            }
+        };
+
+        // --- CORE APPLICATION DATA ---
+        const washProtocols = {
+            bond: { steps: `
+                <div class="step-card">
+                    <h3>Wash Steps: Bond Repair Shine at HP</h3>
+                    <ol>
+                        <li>(Optional, bi-weekly) Pre-wash with **Olaplex No. 3** for 10 minutes.</li>
+                        <li>Wash with **Olaplex No. 4** (Bond Shampoo), focusing on the scalp.</li>
+                        <li>Condition with **Olaplex No. 5** (Bond Conditioner) on mid-lengths to ends.</li>
+                    </ol>
+                </div>`, color: 'purple' },
+            shine: { steps: `
+                <div class="step-card">
+                    <h3>Wash Steps: Shine & pH</h3>
+                    <ol>
+                        <li>Wash with **EverPure Glossing Shampoo** for a deep cleanse.</li>
+                        <li>Apply **EverPure Glossing Glaze** (wait 2-3 mins) to seal the cuticle.</li>
+                        <li>Layer **EverPure Glossing Conditioner** on top, then rinse thoroughly.</li>
+                    </ol>
+                </div>`, color: 'red' },
+            moisture: { steps: `
+                <div class="step-card">
+                    <h3>Wash Steps: Deep Moisture</h3>
+                    <ol>
+                        <li>Wash with **EverPure Deep Nourish Shampoo**.</li>
+                        <li>Apply **EverPure 5-Min Lamination Mask** (*replaces* conditioner) for maximum hydration.</li>
+                        <li>Rinse with cool water to lock in moisture and shine.</li>
+                    </ol>
+                </div>`, color: 'teal' },
+            reset: { steps: `
+                <div class="step-card">
+                    <h3>Wash Steps: Clarify Reset</h3>
+                    <ol>
+                        <li>Wash with **OGX Clarifying Shampoo** twice to remove all product and mineral buildup.</li>
+                        <li>Follow with **EverPure 5-Min Lamination Mask** to restore moisture.</li>
+                    </ol>
+                </div>`, color: 'amber' }
+        };
+
+        const styleProtocols = {
+            prime: `
+                <div class="step-card !border-pink-500">
+                    <h3 class="!text-pink-800">Step 1: Prime (Always)</h3>
+                    <ol>
+                        <li>On damp hair, mist lightly all over with **L'Oréal EverPure 21-in-1 Moisture Spray** to detangle.</li>
+                    </ol>
+                    <p>This provides necessary heat/UV protection and base moisture.</p>
+                </div>`,
+            waves: `
+                <div class="step-card !border-pink-500">
+                    <h3 class="!text-pink-800">Step 2: Style - Defined Waves (Air-Dry)</h3>
+                    <ol>
+                        <li>Rake a pea-to-dime-sized amount of **TIGI Catwalk Curls Rock Amplifier** through damp hair.</li>
+                        <li>Scrunch a pea-sized amount of **JVN Air Dry Cream** into ends.</li>
+                        <li>Air-dry completely without touching to avoid frizz.</li>
+                    </ol>
+                    <p>This combo defines your natural wave pattern.</p>
+                </div>`,
+            blowout: `
+                <div class="step-card !border-pink-500">
+                    <h3 class="!text-pink-800">Step 2: Style - Smooth Blowout</h3>
+                    <ol>
+                        <li>Apply **TIGI Catwalk Blowout Serum** OR **Olaplex Blowout Spray** for heat defense.</li>
+                        <li>Layer 1 pump of **JVN Blowout Styling Milk** over it for light hold.</li>
+                        <li>Blow-dry using a round brush, aiming the nozzle downwards.</li>
+                    </ol>
+                    <p>Provides heat protection, smoothing, and humidity control for a sleek finish.</p>
+                </div>`,
+            iron: `
+                <div class="step-card !border-pink-500">
+                    <h3 class="!text-pink-800">Step 2: Style - Hot Iron Finish (High-Heat)</h3>
+                    <ol>
+                        <li>First, follow the steps for the **"Smooth Blowout"** and dry your hair completely.</li>
+                        <li>On *dry* hair, mist **Sei Bella Hot Iron Prep** OR **L'ange Thermal Magic** lightly on each section *before* using the iron.</li>
+                    </ol>
+                    <p>Crucial second layer of heat protection for high-heat tools.</p>
+                </div>`,
+            gel: `
+                <div class="step-card !border-pink-500">
+                    <h3 class="!text-pink-800">Step 2: Style - Strong Gel Cast (Air-Dry)</h3>
+                    <ol>
+                        <li>After priming, scrunch **Sei Bella Defining Gel** into damp hair until a hard cast forms.</li>
+                        <li>Let air-dry without touching.</li>
+                        <li>Once completely dry, gently "scrunch out the crunch" for soft hold.</li>
+                    </ol>
+                    <p>Use for maximum, all-day hold and frizz control.</p>
+                </div>`,
+            texture: `
+                <div class="step-card !border-pink-500">
+                    <h3 class="!text-pink-800">Step 2: Style - Beachy Texture</h3>
+                    <ol>
+                        <li>After priming, mist **L'ange Sea + Salt Spray** sparingly on damp hair (avoiding roots).</li>
+                        <li>Scrunch and let air-dry, or diffuse lightly.</li>
+                    </ol>
+                    <p>Use for a gritty, piece-y, "beach wave" look.</p>
+                </div>`
+        };
+
+        // --- CALENDAR MWF LOGIC MAPPING ---
+        /**
+         * Determines the wash cycle (Bond, Shine, Moisture, Clarify) for a given date based on a 4-week/12-wash MWF rotation.
+         * The cycle starts on the referenceDate (Oct 20, 2025 - Bond Repair).
+         * @param {string} dateString - YYYY-MM-DD date string.
+         * @returns {{name: string, protocol: string, color: string, bg: string}} The routine details.
+         */
+        const getWashCycleForDate = (dateString) => {
+             // Create a safe date object from the string to prevent local timezone skewing the day-of-week logic
+            const date = new Date(dateString.replace(/-/g, '/')); 
+            const dayOfWeek = date.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+            
+            // Check if it's a non-wash day (Tues=2, Thurs=4, Sat=6, Sun=0)
+            if (![1, 3, 5].includes(dayOfWeek)) {
+                // Return blank for calendar, but informative for Quick Check
+                return { name: 'No Wash', protocol: 'non-wash', color: 'stone-700', bg: 'non-wash' };
+            }
+
+            let washDayCount = 0;
+            // Start counting from the reference date (Oct 20, 2025)
+            let current = new Date(referenceDate);
+            
+            // Loop up to the target date to find the total number of MWF days
+            // We use the date string comparison to ensure the loop runs correctly across month boundaries
+            while (getDateString(current) <= dateString) {
+                const d = current.getDay();
+                if ([1, 3, 5].includes(d)) { // Monday, Wednesday, Friday
+                    washDayCount++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            
+            if (washDayCount === 0) {
+                 return { name: 'No Wash', protocol: 'non-wash', color: 'stone-700', bg: 'non-wash' };
+            }
+            
+            // Determine the cycle index: (0 to 11 for a 12-day cycle)
+            // (washDayCount - 1) because the first wash day (count 1) is index 0.
+            const cycleIndex = (washDayCount - 1) % 12; 
+
+            // Routines mapped to the 12-day cycle (4 weeks * 3 washes/week)
+            const routines = [
+                { name: 'Bond Repair Shine at HP', protocol: 'bond', color: 'purple-700', bg: 'wash-bond' },     // 0 (Wash Day 1, M)
+                { name: 'Shine & pH', protocol: 'shine', color: 'red-600', bg: 'wash-shine' },                  // 1 (Wash Day 2, W)
+                { name: 'Deep Moisture', protocol: 'moisture', color: 'teal-700', bg: 'wash-moisture' },        // 2 (Wash Day 3, F)
+                
+                { name: 'Bond Repair Shine at HP', protocol: 'bond', color: 'purple-700', bg: 'wash-bond' },     // 3 (Wash Day 4, M)
+                { name: 'Shine & pH', protocol: 'shine', color: 'red-600', bg: 'wash-shine' },                  // 4 (Wash Day 5, W)
+                { name: 'Deep Moisture', protocol: 'moisture', color: 'teal-700', bg: 'wash-moisture' },        // 5 (Wash Day 6, F)
+                
+                { name: 'Bond Repair Shine at HP', protocol: 'bond', color: 'purple-700', bg: 'wash-bond' },     // 6 (Wash Day 7, M)
+                { name: 'Shine & pH', protocol: 'shine', color: 'red-600', bg: 'wash-shine' },                  // 7 (Wash Day 8, W)
+                { name: 'Deep Moisture', protocol: 'moisture', color: 'teal-700', bg: 'wash-moisture' },        // 8 (Wash Day 9, F)
+                
+                { name: 'Bond Repair Shine at HP', protocol: 'bond', color: 'purple-700', bg: 'wash-bond' },     // 9 (Wash Day 10, M)
+                { name: 'Shine & pH', protocol: 'shine', color: 'red-600', bg: 'wash-shine' },                  // 10 (Wash Day 11, W)
+                { name: 'Clarify Reset (Detox)', protocol: 'reset', color: 'amber-700', bg: 'wash-reset' }      // 11 (Wash Day 12, F)
+            ];
+            
+            return routines[cycleIndex];
+        };
+
+        // --- PRODUCT ARSENAL DATA (Same as before, updated names) ---
+        const productData = [
+            { name: "Olaplex No. 3 (Perfector)", notes: "Pre-shampoo bond treatment. Use bi-weekly.", category: "Treatment", checkPriceLink: "https://www.amazon.com/olaplex3", reorderLink: "https://www.reordersite.com/olaplex3" },
+            { name: "Olaplex No. 4 (Shampoo)", notes: "Used on Bond Repair Cycle.", category: "Wash", checkPriceLink: "https://www.ulta.com/olaplex4", reorderLink: "https://www.reordersite.com/olaplex4" },
+            { name: "Olaplex No. 5 (Conditioner)", notes: "Standard conditioner for bond days.", category: "Wash", checkPriceLink: "https://www.amazon.com/olaplex5", reorderLink: "https://www.reordersite.com/olaplex5" },
+            { name: "EverPure Glossing Shampoo", notes: "Used on Shine & pH Cycle.", category: "Wash", checkPriceLink: "https://www.target.com/glossingshampoo", reorderLink: "https://www.reordersite.com/glossingshampoo" },
+            { name: "EverPure Glossing Glaze", notes: "Apply after shampoo on Shine Day.", category: "Treatment", checkPriceLink: "https://www.target.com/glossingglaze", reorderLink: "https://www.reordersite.com/glossingglaze" },
+            { name: "EverPure Glossing Conditioner", notes: "Layer over Glaze on Shine Day.", category: "Wash", checkPriceLink: "https://www.target.com/glossingconditioner", reorderLink: "https://www.reordersite.com/glossingconditioner" },
+            { name: "EverPure Deep Nourish Shampoo", notes: "Used on Deep Moisture Cycle.", category: "Wash", checkPriceLink: "https://www.walmart.com/deepnourishshampoo", reorderLink: "https://www.reordersite.com/deepnourishshampoo" },
+            { name: "EverPure Lamination Mask", notes: "Deep moisture, replaces conditioner on Moisture or Reset.", category: "Treatment", checkPriceLink: "https://www.ulta.com/laminationmask", reorderLink: "https://www.reordersite.com/laminationmask" },
+            { name: "OGX Clarifying Shampoo", notes: "Used on Clarify Reset only! Strips buildup.", category: "Wash", checkPriceLink: "https://www.target.com/ogxclarify", reorderLink: "https://www.reordersite.com/ogxclarify" },
+            { name: "EverPure 21-in-1 Spray", notes: "MANDATORY primer step for all styles. Detangler/UV protectant.", category: "Style", checkPriceLink: "https://www.amazon.com/21in1spray", reorderLink: "https://www.reordersite.com/21in1spray" },
+            { name: "TIGI Catwalk Curls Rock Amplifier", notes: "Wave definition for air-drying.", category: "Style", checkPriceLink: "https://www.amazon.com/curlsrock", reorderLink: "https://www.reordersite.com/curlsrock" },
+            { name: "JVN Air Dry Cream", notes: "Softens/seals ends for air-drying.", category: "Style", checkPriceLink: "https://www.sephora.com/jvnairdry", reorderLink: "https://www.reordersite.com/jvnairdry" },
+            { name: "TIGI Catwalk Blowout Serum", notes: "Smoothing/Shine heat protectant.", category: "Style", checkPriceLink: "https://www.amazon.com/blowoutserum", reorderLink: "https://www.reordersite.com/blowoutserum" },
+            { name: "Olaplex Blowout Spray", notes: "Bond-building heat protectant.", category: "Style", checkPriceLink: "https://www.ulta.com/olaplexblowout", reorderLink: "https://www.reordersite.com/olaplexblowout" },
+            { name: "JVN Blowout Styling Milk", notes: "Light hold/smoothing for blowouts.", category: "Style", checkPriceLink: "https://www.sephora.com/jvnmilk", reorderLink: "https://www.reordersite.com/jvnmilk" },
+            { name: "Sei Bella Hot Iron Prep", notes: "Crucial secondary heat shield for hot iron use.", category: "Style", checkPriceLink: "https://www.melaleuca.com/seibella", reorderLink: "https://www.reordersite.com/seibella" },
+            { name: "L'ange Thermal Magic", notes: "Crucial secondary heat shield for hot iron use.", category: "Style", checkPriceLink: "https://www.langehair.com/thermalmagic", reorderLink: "https://www.reordersite.com/thermalmagic" },
+            { name: "Sei Bella Defining Gel", notes: "Maximum hold cast for defined waves.", category: "Style", checkPriceLink: "https://www.melaleuca.com/seibellagel", reorderLink: "https://www.reordersite.com/seibellagel" },
+            { name: "L'ange Sea + Salt Spray", notes: "Texturizer for beachy look. Use sparingly.", category: "Style", checkPriceLink: "https://www.langehair.com/seasalt", reorderLink: "https://www.reordersite.com/seasalt" }
+        ];
+
+        // --- QUICK CHECK LOGIC (UPDATED) ---
+        
+        /**
+         * Gets the suggested routine for a date.
+         */
+        const getSuggestedRoutine = (dateString) => {
+            const routine = getWashCycleForDate(dateString);
+            
+            // Use -800 for better contrast on the quick check widget
+            return { 
+                name: routine.protocol === 'non-wash' ? 'No Wash' : routine.name, 
+                protocol: routine.protocol, 
+                // Color logic uses the specific routine color, mapped to -800 for the widget text
+                color: routine.color.replace(/-700|-600/, '-800') 
+            };
+        };
+
+        /**
+         * Updates the Quick Check widget based on the currently selected date.
+         */
+        const updateSuggestedDayWidget = (dateString) => {
+            const suggestedDay = getSuggestedRoutine(dateString);
+            const suggestedDisplay = document.getElementById('suggested-day-display');
+            
+            // Format the date for display
+            const date = new Date(dateString.replace(/-/g, '/'));
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('quick-check-date').textContent = date.toLocaleDateString(undefined, dateOptions);
+            
+            // Update the routine display
+            suggestedDisplay.textContent = suggestedDay.name;
+            suggestedDisplay.className = `text-4xl font-extrabold my-3 bg-white text-${suggestedDay.color} rounded-lg p-3 mx-auto max-w-sm`;
+            
+            // Update the 'Use Suggested' button. 
+            const useSuggestedBtn = document.getElementById('use-suggested-btn');
+            if (suggestedDay.protocol !== 'non-wash') {
+                 useSuggestedBtn.textContent = `Use ${suggestedDay.name} Wash`;
+                 useSuggestedBtn.disabled = false;
+                 useSuggestedBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                 // Attach click listener to set the wash protocol
+                 useSuggestedBtn.onclick = () => {
+                    const washBtn = document.querySelector(`.wash-button[data-protocol="${suggestedDay.protocol}"]`);
+                    if (washBtn) washBtn.click();
+                };
+            } else {
+                 useSuggestedBtn.textContent = 'No Wash Day (Skip Wash)';
+                 useSuggestedBtn.disabled = true;
+                 useSuggestedBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                 useSuggestedBtn.onclick = () => {}; // Do nothing
+            }
+        };
+
+        // --- CALENDAR RENDERING (CORRECTED) ---
+        const CALENDAR_GRID_ID = 'calendar-grid';
+
+        const renderMonthlyCalendar = () => {
+            const today = new Date();
+            // Get the first day of the target month
+            const targetDate = new Date(today.getFullYear(), today.getMonth() + currentCalendarMonthOffset, 1);
+            const year = targetDate.getFullYear();
+            const month = targetDate.getMonth();
+            const todayPstDateString = LIVE_PST_DATE; // Use live date for the "today" highlight
+            
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
+
+            const calendarGrid = document.getElementById(CALENDAR_GRID_ID);
+            let html = '';
+
+            // 1. Calculate the start day: Find the first Sunday of the calendar view
+            const firstDayOfMonth = new Date(year, month, 1);
+            const startingDay = new Date(firstDayOfMonth);
+            // This correctly calculates the date of the preceding Sunday (or the 1st if it is a Sunday)
+            startingDay.setDate(firstDayOfMonth.getDate() - firstDayOfMonth.getDay()); 
+            
+            // Check if we are viewing the specific month (October 2025) which requires the forced start date
+            const isOctober2025 = (month === 9 && year === 2025); 
+
+            // 2. Render Day Headers (must be before cells for grid alignment)
+            const dayHeaders = [
+                `<div class="day-header">Sunday</div>`,
+                `<div class="day-header">Monday</div>`,
+                `<div class="day-header">Tuesday</div>`,
+                `<div class="day-header">Wednesday</div>`,
+                `<div class="day-header">Thursday</div>`,
+                `<div class="day-header">Friday</div>`,
+                `<div class="day-header">Saturday</div>`,
+            ].join('');
+            html += dayHeaders;
+
+
+            // 3. Render 6 weeks (42 days) of cells
+            for (let i = 0; i < 42; i++) {
+                const currentDate = new Date(startingDay);
+                currentDate.setDate(startingDay.getDate() + i);
+                
+                const day = currentDate.getDate();
+                const currentMonth = currentDate.getMonth();
+                const currentDateString = getDateString(currentDate);
+
+                const isToday = currentDateString === todayPstDateString;
+                const isSelected = currentDateString === selectedDateString;
+                const isOutsideMonth = currentMonth !== month;
+                
+                // --- Oct 2025 Specific Filter (KEEPING ONLY THIS EXCEPTION) ---
+                let isHidden = false;
+                if (isOctober2025 && currentDate < cutoffDate) {
+                    isHidden = true; // Hides dates before Oct 19, 2025
+                }
+                // --- END Oct 2025 Specific Filter ---
+
+                // Get routine using the date string
+                const routine = getWashCycleForDate(currentDateString);
+
+                const washClass = routine.bg;
+                const routineText = routine.protocol === 'non-wash' ? '' : routine.name;
+                const routineColor = routine.protocol === 'reset' ? 'amber-700' : routine.protocol === 'shine' ? 'red-600' : routine.protocol === 'bond' ? 'purple-700' : routine.protocol === 'moisture' ? 'teal-700' : 'stone-700';
+
+
+                let cellClasses = `${washClass} `;
+
+                if (isOutsideMonth) cellClasses += 'outside-month';
+                
+                // Apply 'hidden' class to remove unwanted cells for the Oct 2025 start filter
+                if (isHidden) cellClasses += ' hidden'; 
+                
+                // Apply highlights
+                if (isToday) cellClasses += ' today-highlight';
+                
+                if (isSelected) {
+                    // Remove today highlight if selected to avoid clashing backgrounds
+                    cellClasses = cellClasses.replace('today-highlight', '');
+                    cellClasses += ' selected-highlight'; 
+                }
+                
+                // Add conditional class for hover on outside month cells (make them non-interactive)
+                if(isOutsideMonth || isHidden) {
+                    cellClasses += ' cursor-default';
+                }
+
+                html += `
+                    <div class="day-cell ${cellClasses}" 
+                         data-date="${currentDateString}"
+                         data-wash-protocol="${routine.protocol}">
+                        <span class="day-number">${day}</span>
+                        <span class="day-routine !text-${routineColor}">${routineText}</span>
+                    </div>
+                `;
+            }
+
+            calendarGrid.innerHTML = html;
+            
+            // Attach click listeners to the newly rendered cells
+            calendarGrid.querySelectorAll('.day-cell').forEach(cell => {
+                // Ensure hidden and outside-month cells are not clickable
+                if (!cell.classList.contains('hidden') && !cell.classList.contains('outside-month')) {
+                    cell.addEventListener('click', (event) => {
+                        const newDateString = cell.dataset.date;
+                        if (newDateString) {
+                            selectedDateString = newDateString;
+                            renderMonthlyCalendar(); // Re-render to update highlights
+                            updateSuggestedDayWidget(newDateString);
+                        }
+                    });
+                }
+            });
+            
+            // Ensure the Quick Check widget is updated after rendering
+            updateSuggestedDayWidget(selectedDateString);
+        };
+
+        // --- UI UPDATERS (Same as before) ---
+        const clearRoutine = () => {
+            currentWash = null;
+            currentStyle = null;
+            document.querySelectorAll('.protocol-button').forEach(btn => btn.classList.remove('active'));
+            saveLastSelection();
+            updateProtocolDisplay(); 
+        };
+
+        const updateProtocolDisplay = () => {
+            const washDisplay = document.getElementById('wash-steps');
+            const styleDisplay = document.getElementById('style-steps');
+            const logSection = document.getElementById('log-section');
+            const statusEl = document.getElementById('selection-status');
+
+            washDisplay.innerHTML = currentWash ? washProtocols[currentWash].steps : '';
+            styleDisplay.innerHTML = currentStyle ? (styleProtocols['prime'] + styleProtocols[currentStyle]) : '';
+            
+            const washBtn = document.querySelector(`.wash-button[data-protocol="${currentWash}"]`);
+            const styleBtn = document.querySelector(`.style-button[data-protocol="${currentStyle}"]`);
+            
+            const washName = washBtn ? washBtn.textContent : 'Not Selected';
+            const styleName = styleBtn ? styleBtn.textContent : 'Not Selected';
+
+            if (currentWash || currentStyle) {
+                statusEl.innerHTML = `**Wash Routine:** ${washName} | **Style Goal:** ${styleName}`;
+                statusEl.classList.remove('border-red-500');
+                statusEl.classList.add('border-purple-500');
+            } else {
+                statusEl.innerHTML = 'No Routine Selected. Please choose Step 1 and Step 2 above.';
+                statusEl.classList.remove('border-purple-500');
+                statusEl.classList.add('border-red-500');
+            }
+            
+            if (currentWash && currentStyle) {
+                logSection.classList.remove('hidden');
+                document.getElementById('log-message').textContent = ''; 
+            } else {
+                logSection.classList.add('hidden');
+            }
+        };
+
+        const applySelectionsToUI = () => {
+            document.querySelectorAll('.protocol-button').forEach(btn => btn.classList.remove('active'));
+
+            if (currentWash) {
+                const washBtn = document.querySelector(`.wash-button[data-protocol="${currentWash}"]`);
+                if (washBtn) washBtn.classList.add('active');
+            }
+            if (currentStyle) {
+                const styleBtn = document.querySelector(`.style-button[data-protocol="${currentStyle}"]`);
+                if (styleBtn) styleBtn.classList.add('active');
+            }
+            updateProtocolDisplay();
+        };
+
+        const renderArsenal = () => {
+            const displayEl = document.getElementById('product-arsenal-display');
+            displayEl.innerHTML = ''; 
+            
+            const categories = productData.reduce((acc, p) => {
+                acc[p.category] = acc[p.category] || [];
+                acc[p.category].push(p);
+                return acc;
+            }, {});
+
+            let html = '';
+            for (const category in categories) {
+                html += `
+                    <section class="card p-6 mb-8 border-t-4 border-purple-700">
+                        <h3 class="text-2xl font-bold text-purple-700 mb-5">${category} Products</h3>
+                        <div class="product-grid">
+                `;
+                categories[category].forEach(p => {
+                    const priceLink = p.checkPriceLink || '#';
+                    const reorderLink = p.reorderLink || '#';
+
+                    html += `
+                        <div class="product-card-enhanced">
+                            <span class="product-name">${p.name}</span>
+                            <p class="usage-note">${p.notes}</p>
+                            
+                            <div class="link-button-group">
+                                <a href="${priceLink}" target="_blank" class="price-link">
+                                    Check Price
+                                </a>
+                                <a href="${reorderLink}" target="_blank" class="reorder-link">
+                                    Reorder Link
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div></section>`;
+            }
+            displayEl.innerHTML = html;
+        };
+
+        // --- EVENT LISTENERS & INITIALIZATION ---
+        const initializeUI = () => {
+            const tabs = [
+                { btn: document.getElementById('tab-btn-protocol'), panel: document.getElementById('tab-panel-protocol'), render: () => updateSuggestedDayWidget(selectedDateString) },
+                { btn: document.getElementById('tab-btn-calendar'), panel: document.getElementById('tab-panel-calendar'), render: renderMonthlyCalendar },
+                { btn: document.getElementById('tab-btn-weekly'), panel: document.getElementById('tab-panel-weekly'), render: () => {} }, 
+                { btn: document.getElementById('tab-btn-arsenal'), panel: document.getElementById('tab-panel-arsenal'), render: renderArsenal }
+            ];
+
+            // Tab Logic
+            const activateTab = (activeTab) => {
+                tabs.forEach(t => {
+                    t.btn.classList.remove('active');
+                    t.btn.setAttribute('aria-selected', 'false');
+                    t.panel.classList.add('hidden');
+                });
+                activeTab.btn.classList.add('active');
+                activeTab.btn.setAttribute('aria-selected', 'true');
+                activeTab.panel.classList.remove('hidden');
+
+                if (activeTab.render) {
+                    activeTab.render();
+                }
+            };
+
+            tabs.forEach(tab => {
+                tab.btn.addEventListener('click', () => activateTab(tab));
+            });
+            
+            // Accordion Logic
+            const toggleAccordion = (header) => {
+                const targetId = header.dataset.target;
+                const content = document.getElementById(targetId);
+                const chevronId = header.id.replace('header', 'chevron');
+                const chevron = document.getElementById(chevronId);
+                
+                const isHidden = content.classList.contains('hidden');
+                
+                // Hide all other accordions
+                document.querySelectorAll('.accordion-content').forEach(c => {
+                    if (c.id !== targetId) {
+                        c.classList.add('hidden');
+                        const h = document.getElementById(c.id.replace('content', 'header'));
+                        h.classList.remove('active');
+                        document.getElementById(c.id.replace('content', 'chevron')).innerHTML = '►';
+                        document.getElementById(c.id.replace('content', 'chevron')).classList.add('rotate-90');
+                        document.getElementById(c.id.replace('content', 'chevron')).classList.remove('rotate-0');
+                    }
+                });
+
+                // Toggle current accordion
+                if (isHidden) {
+                    content.classList.remove('hidden');
+                    header.classList.add('active');
+                    chevron.innerHTML = '▼'; 
+                    chevron.classList.remove('rotate-90');
+                    chevron.classList.add('rotate-0');
+                } else {
+                    content.classList.add('hidden');
+                    header.classList.remove('active');
+                    chevron.innerHTML = '►'; 
+                    chevron.classList.add('rotate-90');
+                    chevron.classList.remove('rotate-0');
+                }
+            };
+            
+            document.querySelectorAll('.accordion-header').forEach(header => {
+                header.addEventListener('click', () => toggleAccordion(header));
+            });
+
+            // Button Handlers
+            document.querySelectorAll('.wash-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    currentWash = button.dataset.protocol;
+                    document.querySelectorAll('.wash-button').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    updateProtocolDisplay();
+                    saveLastSelection();
+                });
+            });
+
+            document.querySelectorAll('.style-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    currentStyle = button.dataset.protocol;
+                    document.querySelectorAll('.style-button').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    updateProtocolDisplay();
+                    saveLastSelection();
+                });
+            });
+
+            // Calendar Navigation Handlers
+            document.getElementById('prev-month-btn').addEventListener('click', () => {
+                currentCalendarMonthOffset--;
+                renderMonthlyCalendar();
+            });
+            document.getElementById('next-month-btn').addEventListener('click', () => {
+                currentCalendarMonthOffset++;
+                renderMonthlyCalendar();
+            });
+            
+            // Log Completion Handler
+            document.getElementById('log-completion-btn').addEventListener('click', logCompletion);
+
+            // Clear Selection Handler
+            document.getElementById('clear-selection-btn').addEventListener('click', clearRoutine);
+            
+            // Initial Accordion State
+            document.getElementById('accordion-style-content').classList.add('hidden');
+            document.getElementById('accordion-wash-header').classList.add('active');
+            
+            // Initial display update & Quick Check for today
+            updateProtocolDisplay();
+            updateSuggestedDayWidget(selectedDateString);
+        };
+
+        // Start the process by setting up Firebase
+        setupFirebase();
+    </script>
+</body>
+</html>
